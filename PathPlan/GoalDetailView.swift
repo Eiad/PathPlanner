@@ -156,34 +156,38 @@ struct GoalDetailView: View {
     }
 
     private func stepRow(title: String, steps: [Step], type: StepType) -> some View {
-        HStack {
-            Image(systemName: iconForStepType(type))
-                .font(.system(size: 24))
-                .foregroundColor(colorForStepType(type))
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.system(size: 18, weight: .semibold, design: .rounded))
-                    .foregroundColor(.primary)
-                Text("\(steps.count) steps")
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
-                    .foregroundColor(.secondary)
-            }
-            Spacer()
-            Button(action: {
-                selectedStepType = type
-                showingStepEditor = true
-            }) {
-                Image(systemName: "plus.circle.fill")
+        NavigationLink(destination: StepListView(title: title, goal: goal, stepType: type)) {
+            HStack {
+                Image(systemName: iconForStepType(type))
                     .font(.system(size: 24))
                     .foregroundColor(colorForStepType(type))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                        .foregroundColor(.primary)
+                    Text("\(steps.count) steps")
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+                Button(action: {
+                    selectedStepType = type
+                    showingStepEditor = true
+                }) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(colorForStepType(type))
+                }
+                .buttonStyle(PlainButtonStyle())
             }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : .white)
+                    .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+            )
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : .white)
-                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
-        )
+        .buttonStyle(PlainButtonStyle())
     }
 
     private func iconForStepType(_ type: StepType) -> String {
