@@ -67,7 +67,6 @@ struct GoalDetailView: View {
                 dateRangeView
                 progressView
                 stepsSection
-                addStepSection
             }
             .padding()
         }
@@ -82,6 +81,11 @@ struct GoalDetailView: View {
             }
         }
         .background(colorScheme == .dark ? Color(hex: "1A1A1A") : Color(hex: "F0F0F0"))
+        .sheet(isPresented: $showingStepEditor) {
+            StepEditorView(step: newStep.content) { attributedText, images, endDate in
+                addStep(attributedText: attributedText, images: images, endDate: endDate)
+            }
+        }
     }
 
     private var headerView: some View {
@@ -145,39 +149,41 @@ struct GoalDetailView: View {
 
     private var stepsSection: some View {
         VStack(spacing: 16) {
-            stepButton(title: "Daily Steps", steps: goal.dailySteps, type: .daily)
-            stepButton(title: "Weekly Steps", steps: goal.weeklySteps, type: .weekly)
-            stepButton(title: "Monthly Steps", steps: goal.monthlySteps, type: .monthly)
+            stepRow(title: "Daily Steps", steps: goal.dailySteps, type: .daily)
+            stepRow(title: "Weekly Steps", steps: goal.weeklySteps, type: .weekly)
+            stepRow(title: "Monthly Steps", steps: goal.monthlySteps, type: .monthly)
         }
     }
 
-    private func stepButton(title: String, steps: [Step], type: StepType) -> some View {
-        NavigationLink(destination: StepListView(title: title, goal: goal, stepType: type)) {
-            HStack {
-                Image(systemName: iconForStepType(type))
-                    .font(.system(size: 24))
-                    .foregroundColor(.purple)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.system(size: 18, weight: .semibold, design: .rounded))
-                        .foregroundColor(.primary)
-                    Text("\(steps.count) steps")
-                        .font(.system(size: 14, weight: .medium, design: .rounded))
-                        .foregroundColor(.secondary)
-                }
-                Spacer()
-                Image(systemName: "chevron.right")
+    private func stepRow(title: String, steps: [Step], type: StepType) -> some View {
+        HStack {
+            Image(systemName: iconForStepType(type))
+                .font(.system(size: 24))
+                .foregroundColor(colorForStepType(type))
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .foregroundColor(.primary)
+                Text("\(steps.count) steps")
+                    .font(.system(size: 14, weight: .medium, design: .rounded))
                     .foregroundColor(.secondary)
             }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : .white)
-                    .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
-            )
+            Spacer()
+            Button(action: {
+                selectedStepType = type
+                showingStepEditor = true
+            }) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 24))
+                    .foregroundColor(colorForStepType(type))
+            }
         }
-        .buttonStyle(PlainButtonStyle())
-        .id(refreshID)
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : .white)
+                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+        )
     }
 
     private func iconForStepType(_ type: StepType) -> String {
@@ -191,38 +197,14 @@ struct GoalDetailView: View {
         }
     }
 
-    private var addStepSection: some View {
-        VStack(spacing: 12) {
-            Picker("Step Type", selection: $selectedStepType) {
-                ForEach(StepType.allCases, id: \.self) { type in
-                    Text(type.rawValue).tag(type)
-                }
-            }
-            .pickerStyle(SegmentedPickerStyle())
-
-            Button(action: {
-                showingStepEditor = true
-            }) {
-                HStack {
-                    Image(systemName: "plus.circle.fill")
-                    Text("Add New Step")
-                }
-                .foregroundColor(.white)
-                .padding()
-                .background(Color.purple)
-                .cornerRadius(10)
-            }
-        }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : .white)
-                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
-        )
-        .sheet(isPresented: $showingStepEditor) {
-            StepEditorView(step: newStep.content) { attributedText, images, endDate in
-                addStep(attributedText: attributedText, images: images, endDate: endDate)
-            }
+    private func colorForStepType(_ type: StepType) -> Color {
+        switch type {
+        case .daily:
+            return .blue
+        case .weekly:
+            return .green
+        case .monthly:
+            return .purple
         }
     }
 
