@@ -48,6 +48,7 @@ struct AttributedText: UIViewRepresentable {
 
 struct GoalDetailView: View {
     @ObservedObject var goal: Goal
+    @Environment(\.presentationMode) var presentationMode
     @State private var newStep = Step(content: NSAttributedString(string: ""))
     @State private var selectedStepType: StepType = .daily
     @State private var showingStepEditor = false
@@ -63,7 +64,10 @@ struct GoalDetailView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                headerView
+                Text(goal.title)
+                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .foregroundColor(.primary)
+                
                 dateRangeView
                 progressView
                 stepsSection
@@ -80,7 +84,7 @@ struct GoalDetailView: View {
                 .foregroundColor(.purple)
             }
         }
-        .background(colorScheme == .dark ? Color(hex: "1A1A1A") : Color(hex: "F0F0F0"))
+        .background(Color(UIColor.systemGroupedBackground))
         .sheet(isPresented: $showingStepEditor) {
             StepEditorView(step: newStep.content) { attributedText, images, endDate in
                 addStep(attributedText: attributedText, images: images, endDate: endDate)
@@ -88,33 +92,15 @@ struct GoalDetailView: View {
         }
     }
 
-    private var headerView: some View {
-        VStack(spacing: 8) {
-            Text(goal.title)
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .multilineTextAlignment(.center)
-                .foregroundColor(.primary)
-        }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : .white)
-                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
-        )
-    }
-
     private var dateRangeView: some View {
         HStack {
             dateView(date: goal.startDate, icon: "calendar")
             Spacer()
-            dateView(date: goal.endDate, icon: "flag")
+            dateView(date: goal.endDate, icon: "flag.fill")
         }
         .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : .white)
-                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
-        )
+        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .cornerRadius(16)
     }
 
     private func dateView(date: Date, icon: String) -> some View {
@@ -140,11 +126,8 @@ struct GoalDetailView: View {
                 .foregroundColor(.secondary)
         }
         .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : .white)
-                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
-        )
+        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .cornerRadius(16)
     }
 
     private var stepsSection: some View {
@@ -156,38 +139,36 @@ struct GoalDetailView: View {
     }
 
     private func stepRow(title: String, steps: [Step], type: StepType) -> some View {
-        NavigationLink(destination: StepListView(title: title, goal: goal, stepType: type)) {
-            HStack {
-                Image(systemName: iconForStepType(type))
-                    .font(.system(size: 24))
-                    .foregroundColor(colorForStepType(type))
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.system(size: 18, weight: .semibold, design: .rounded))
-                        .foregroundColor(.primary)
-                    Text("\(steps.count) steps")
-                        .font(.system(size: 14, weight: .medium, design: .rounded))
-                        .foregroundColor(.secondary)
-                }
-                Spacer()
-                Button(action: {
-                    selectedStepType = type
-                    showingStepEditor = true
-                }) {
-                    Image(systemName: "plus.circle.fill")
+        HStack {
+            NavigationLink(destination: StepListView(title: title, goal: goal, stepType: type)) {
+                HStack {
+                    Image(systemName: iconForStepType(type))
                         .font(.system(size: 24))
                         .foregroundColor(colorForStepType(type))
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(title)
+                            .font(.system(size: 18, weight: .semibold, design: .rounded))
+                            .foregroundColor(.primary)
+                        Text("\(steps.count) steps")
+                            .font(.system(size: 14, weight: .medium, design: .rounded))
+                            .foregroundColor(.secondary)
+                    }
                 }
-                .buttonStyle(PlainButtonStyle())
             }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : .white)
-                    .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
-            )
+            Spacer()
+            Button(action: {
+                selectedStepType = type
+                showingStepEditor = true
+            }) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 24))
+                    .foregroundColor(colorForStepType(type))
+            }
+            .buttonStyle(PlainButtonStyle())
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding()
+        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .cornerRadius(16)
     }
 
     private func iconForStepType(_ type: StepType) -> String {

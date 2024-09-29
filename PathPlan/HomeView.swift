@@ -16,28 +16,29 @@ struct HomeView: View {
     
     var body: some View {
         NavigationView {
-            ZStack {
-                backgroundGradient
-                
-                ScrollView {
-                    LazyVStack(spacing: 20) {
-                        ForEach(goals) { goal in
-                            NavigationLink(destination: GoalDetailView(goal: goal)) {
-                                GoalCardView(goal: goal)
-                            }
-                            .buttonStyle(PlainButtonStyle())
+            ScrollView {
+                VStack(spacing: 20) {
+                    Text("My Goals")
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
+                    
+                    ForEach(goals) { goal in
+                        NavigationLink(destination: GoalDetailView(goal: goal)) {
+                            GoalCardView(goal: goal)  // Changed from GoalCard to GoalCardView
                         }
                     }
-                    .padding()
                 }
+                .padding(.top)
             }
-            .navigationTitle("My Goals")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showingAddGoalView = true }) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.accentColor)
+                    Button(action: {
+                        showingAddGoalView = true
+                    }) {
+                        Image(systemName: "plus")
+                            .foregroundColor(.purple)
                     }
                 }
             }
@@ -45,7 +46,7 @@ struct HomeView: View {
                 AddGoalView()
             }
         }
-        .accentColor(Color.purple)
+        .background(backgroundGradient)  // Apply the background gradient
     }
  
     private var backgroundGradient: some View {
