@@ -337,9 +337,7 @@ struct RichTextEditorView: View {
     @Binding var text: NSAttributedString
     @Binding var attachedImages: [UIImage]
     @Binding var endDate: Date?
-    @State private var showingImagePicker = false
     @State private var showingDatePicker = false
-    @State private var inputImage: UIImage?
     @State private var selectedRange: NSRange = NSRange(location: 0, length: 0)
     @State private var fontSize: CGFloat = 17
     @State private var isBold = false
@@ -372,10 +370,6 @@ struct RichTextEditorView: View {
                         .foregroundColor(.accentColor)
                 }
                 Spacer()
-                Button(action: { showingImagePicker = true }) {
-                    Image(systemName: "photo")
-                        .foregroundColor(.accentColor)
-                }
                 Button(action: { showingDatePicker = true }) {
                     Image(systemName: "calendar")
                         .foregroundColor(.accentColor)
@@ -403,30 +397,6 @@ struct RichTextEditorView: View {
                 .animation(.default, value: showingFormatting)
             }
 
-            if !attachedImages.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(attachedImages.indices, id: \.self) { index in
-                            Image(uiImage: attachedImages[index])
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 80, height: 80)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                                .overlay(
-                                    Button(action: { removeImage(at: index) }) {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .foregroundColor(.white)
-                                            .background(Color.black.opacity(0.7))
-                                            .clipShape(Circle())
-                                    }
-                                    .padding(4),
-                                    alignment: .topTrailing
-                                )
-                        }
-                    }
-                }
-            }
-
             if let endDate = endDate {
                 HStack {
                     Text("End Date: \(endDate, style: .date)")
@@ -439,9 +409,6 @@ struct RichTextEditorView: View {
                 }
                 .padding(.horizontal)
             }
-        }
-        .sheet(isPresented: $showingImagePicker, onDismiss: loadImage) {
-            ImagePicker(image: $inputImage)
         }
         .sheet(isPresented: $showingDatePicker) {
             DatePicker("Select End Date", selection: Binding(
@@ -473,15 +440,6 @@ struct RichTextEditorView: View {
         
         mutableAttrString.addAttributes(attributes, range: selectedRange)
         text = mutableAttrString
-    }
-
-    private func loadImage() {
-        guard let inputImage = inputImage else { return }
-        attachedImages.append(inputImage)
-    }
-
-    private func removeImage(at index: Int) {
-        attachedImages.remove(at: index)
     }
 }
 
