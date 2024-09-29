@@ -65,6 +65,7 @@ struct GoalDetailView: View {
             VStack(spacing: 20) {
                 headerView
                 dateRangeView
+                progressView
                 stepsSection
                 addStepSection
             }
@@ -80,7 +81,7 @@ struct GoalDetailView: View {
                 .foregroundColor(.purple)
             }
         }
-        .background(colorScheme == .dark ? Color.black : Color(UIColor.systemGroupedBackground))
+        .background(colorScheme == .dark ? Color(hex: "1A1A1A") : Color(hex: "F0F0F0"))
     }
 
     private var headerView: some View {
@@ -88,13 +89,58 @@ struct GoalDetailView: View {
             Text(goal.title)
                 .font(.system(size: 28, weight: .bold, design: .rounded))
                 .multilineTextAlignment(.center)
+                .foregroundColor(.primary)
         }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : .white)
+                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+        )
     }
 
     private var dateRangeView: some View {
-        Text("Start: \(formattedDate(goal.startDate)) - End: \(formattedDate(goal.endDate))")
-            .font(.subheadline)
-            .foregroundColor(.secondary)
+        HStack {
+            dateView(date: goal.startDate, icon: "calendar")
+            Spacer()
+            dateView(date: goal.endDate, icon: "flag")
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : .white)
+                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+        )
+    }
+
+    private func dateView(date: Date, icon: String) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 24))
+                .foregroundColor(.purple)
+            Text(formattedDate(date))
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private var progressView: some View {
+        VStack(spacing: 8) {
+            Text("Progress")
+                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                .foregroundColor(.primary)
+            ProgressView(value: goal.progress)
+                .progressViewStyle(RoundedRectProgressViewStyle())
+            Text("\(Int(goal.progress * 100))%")
+                .font(.system(size: 16, weight: .medium, design: .rounded))
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : .white)
+                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+        )
     }
 
     private var stepsSection: some View {
@@ -108,21 +154,41 @@ struct GoalDetailView: View {
     private func stepButton(title: String, steps: [Step], type: StepType) -> some View {
         NavigationLink(destination: StepListView(title: title, goal: goal, stepType: type)) {
             HStack {
-                Text(title)
-                    .font(.headline)
+                Image(systemName: iconForStepType(type))
+                    .font(.system(size: 24))
+                    .foregroundColor(.purple)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                        .foregroundColor(.primary)
+                    Text("\(steps.count) steps")
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .foregroundColor(.secondary)
+                }
                 Spacer()
-                Text("\(steps.count)")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
                 Image(systemName: "chevron.right")
                     .foregroundColor(.secondary)
             }
             .padding()
-            .background(Color(UIColor.secondarySystemGroupedBackground))
-            .cornerRadius(10)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : .white)
+                    .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+            )
         }
         .buttonStyle(PlainButtonStyle())
         .id(refreshID)
+    }
+
+    private func iconForStepType(_ type: StepType) -> String {
+        switch type {
+        case .daily:
+            return "sun.max"
+        case .weekly:
+            return "calendar.badge.clock"
+        case .monthly:
+            return "calendar"
+        }
     }
 
     private var addStepSection: some View {
@@ -141,12 +207,18 @@ struct GoalDetailView: View {
                     Image(systemName: "plus.circle.fill")
                     Text("Add New Step")
                 }
-                .foregroundColor(.purple)
+                .foregroundColor(.white)
                 .padding()
-                .background(Color(UIColor.secondarySystemGroupedBackground))
+                .background(Color.purple)
                 .cornerRadius(10)
             }
         }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : .white)
+                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+        )
         .sheet(isPresented: $showingStepEditor) {
             StepEditorView(step: newStep.content) { attributedText, images, endDate in
                 addStep(attributedText: attributedText, images: images, endDate: endDate)

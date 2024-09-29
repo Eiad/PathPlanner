@@ -20,7 +20,7 @@ struct HomeView: View {
                 backgroundGradient
                 
                 ScrollView {
-                    LazyVStack(spacing: 16) {
+                    LazyVStack(spacing: 20) {
                         ForEach(goals) { goal in
                             NavigationLink(destination: GoalDetailView(goal: goal)) {
                                 GoalCardView(goal: goal)
@@ -47,24 +47,17 @@ struct HomeView: View {
         }
         .accentColor(Color.purple)
     }
-    
+ 
     private var backgroundGradient: some View {
         LinearGradient(
             gradient: Gradient(colors: [
-                colorScheme == .dark ? Color.black : Color.white,
-                colorScheme == .dark ? Color(hex: "1A1A1A") : Color(hex: "F0F0F0")
+                colorScheme == .dark ? Color(hex: "1A1A1A") : Color(hex: "F0F0F0"),
+                colorScheme == .dark ? Color(hex: "2A2A2A") : Color.white
             ]),
             startPoint: .top,
             endPoint: .bottom
         )
         .edgesIgnoringSafeArea(.all)
-    }
-    
-    private func deleteGoals(at offsets: IndexSet) {
-        for index in offsets {
-            let goal = goals[index]
-            modelContext.delete(goal)
-        }
     }
 }
 
@@ -114,7 +107,7 @@ struct RoundedRectProgressViewStyle: ProgressViewStyle {
             
             RoundedRectangle(cornerRadius: 14)
                 .frame(width: CGFloat(configuration.fractionCompleted ?? 0) * 100, height: 8)
-                .foregroundColor(.accentColor)
+                .foregroundColor(.purple)
         }
     }
 }
