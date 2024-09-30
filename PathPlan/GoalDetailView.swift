@@ -352,6 +352,11 @@ struct StepEditorView: View {
     @State private var attributedText: NSAttributedString
     @State private var endDate: Date?
     @State private var showingDatePicker = false
+    @State private var fontSize: CGFloat = 17
+    @State private var isBold = false
+    @State private var textColor: Color = .primary
+    @State private var showingFormatting = false
+    @State private var selectedRange: NSRange = NSRange(location: 0, length: 0)
     @Environment(\.presentationMode) var presentationMode
     var onSave: (NSAttributedString, Date?) -> Void
 
@@ -362,31 +367,74 @@ struct StepEditorView: View {
 
     var body: some View {
         NavigationView {
-            Form {
-                Section(header: Text("Step Content")) {
-                    TextEditor(text: Binding(
-                        get: { attributedText.string },
-                        set: { attributedText = NSAttributedString(string: $0) }
-                    ))
-                    .frame(minHeight: 100)
+            VStack(spacing: 16) {
+                ZStack(alignment: .topLeading) {
+                    if attributedText.string.isEmpty {
+                        Text("Enter your step details...")
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 12)
+                    }
+                    AttributedText(text: $attributedText, selectedRange: $selectedRange)
+                        .frame(height: 150)
+                        .padding(8)
+                }
+                .background(Color(.systemBackground))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                )
+
+                HStack {
+                    Button(action: { showingFormatting.toggle() }) {
+                        Image(systemName: "textformat")
+                            .foregroundColor(.accentColor)
+                    }
+                    Spacer()
+                    Button(action: { showingDatePicker = true }) {
+                        Image(systemName: "calendar")
+                            .foregroundColor(.accentColor)
+                    }
+                }
+                .padding(.horizontal)
+
+                if showingFormatting {
+                    HStack {
+                        Button(action: toggleBold) {
+                            Image(systemName: "bold")
+                                .foregroundColor(isBold ? .accentColor : .primary)
+                        }
+                        Picker("Size", selection: $fontSize) {
+                            Text("S").tag(CGFloat(14))
+                            Text("M").tag(CGFloat(17))
+                            Text("L").tag(CGFloat(20))
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .frame(width: 120)
+                        ColorPicker("", selection: $textColor)
+                    }
+                    .padding(.horizontal)
+                    .transition(.move(edge: .top))
+                    .animation(.default, value: showingFormatting)
                 }
 
-                Section(header: Text("End Date (Optional)")) {
-                    Toggle(isOn: Binding(
-                        get: { endDate != nil },
-                        set: { if $0 { endDate = Date() } else { endDate = nil } }
-                    )) {
-                        Text("Set End Date")
+                if let endDate = endDate {
+                    HStack {
+                        Text("End Date: \(endDate, style: .date)")
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Button(action: { self.endDate = nil }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.red)
+                        }
                     }
-
-                    if endDate != nil {
-                        DatePicker("End Date", selection: Binding(
-                            get: { endDate ?? Date() },
-                            set: { endDate = $0 }
-                        ), displayedComponents: .date)
-                    }
+                    .padding(.horizontal)
                 }
+
+                Spacer()
             }
+            .padding()
             .navigationTitle(attributedText.string.isEmpty ? "Add Step" : "Edit Step")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -403,6 +451,36 @@ struct StepEditorView: View {
                 }
             }
         }
+        .sheet(isPresented: $showingDatePicker) {
+            DatePicker("Select End Date", selection: Binding(
+                get: { self.endDate ?? Date() },
+                set: { self.endDate = $0 }
+            ), displayedComponents: .date)
+            .datePickerStyle(GraphicalDatePickerStyle())
+            .padding()
+            .presentationDetents([.medium])
+        }
+        .onChange(of: fontSize) { _ in applyFormatting() }
+        .onChange(of: isBold) { _ in applyFormatting() }
+        .onChange(of: textColor) { _ in applyFormatting() }
+    }
+
+    private func toggleBold() {
+        isBold.toggle()
+        applyFormatting()
+    }
+
+    private func applyFormatting() {
+        guard selectedRange.location != NSNotFound else { return }
+        
+        let mutableAttrString = NSMutableAttributedString(attributedString: attributedText)
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: fontSize, weight: isBold ? .bold : .regular),
+            .foregroundColor: UIColor(textColor)
+        ]
+        
+        mutableAttrString.addAttributes(attributes, range: selectedRange)
+        attributedText = mutableAttrString
     }
 }
 
