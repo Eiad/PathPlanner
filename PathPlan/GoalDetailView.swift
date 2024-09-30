@@ -236,6 +236,7 @@ struct StepListView: View {
     @ObservedObject var goal: Goal
     let stepType: GoalDetailView.StepType
     @Binding var refreshID: UUID
+    @State private var showingAddStep = false
 
     var steps: [Step] {
         switch stepType {
@@ -249,16 +250,49 @@ struct StepListView: View {
     }
 
     var body: some View {
-        List {
-            ForEach(steps, id: \.id) { step in
-                StepView(step: step, goal: goal, refreshID: $refreshID)
+        ZStack {
+            Color(UIColor.systemGroupedBackground).edgesIgnoringSafeArea(.all)
+            
+            ScrollView {
+                LazyVStack(spacing: 16) {
+                    ForEach(steps, id: \.id) { step in
+                        StepCardView(step: step, goal: goal, refreshID: $refreshID)
+                    }
+                }
+                .padding()
             }
         }
         .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: { showingAddStep = true }) {
+                    Image(systemName: "plus")
+                }
+            }
+        }
+        .sheet(isPresented: $showingAddStep) {
+            StepEditorView(step: NSAttributedString()) { attributedText, endDate in
+                addStep(attributedText: attributedText, endDate: endDate)
+            }
+        }
+    }
+
+    private func addStep(attributedText: NSAttributedString, endDate: Date?) {
+        let newStep = Step(content: attributedText, endDate: endDate)
+        switch stepType {
+        case .daily:
+            goal.dailySteps.append(newStep)
+        case .weekly:
+            goal.weeklySteps.append(newStep)
+        case .monthly:
+            goal.monthlySteps.append(newStep)
+        }
+        refreshID = UUID()
     }
 }
 
-struct StepView: View {
+struct StepCardView: View {
     let step: Step
     @ObservedObject var goal: Goal
     @Binding var refreshID: UUID
@@ -266,26 +300,43 @@ struct StepView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(AttributedString(step.content))
-                .padding()
-                .background(Color(.systemBackground))
-                .cornerRadius(8)
-            
-            Button("Edit") {
-                showingStepEditView = true
+            HStack {
+                Text(AttributedString(step.content))
+                    .font(.system(size: 16, weight: .regular, design: .rounded))
+                    .lineLimit(2)
+                Spacer()
+                Button(action: { showingStepEditView = true }) {
+                    Image(systemName: "pencil.circle.fill")
+                        .foregroundColor(.purple)
+                        .font(.system(size: 24))
+                }
             }
-            .sheet(isPresented: $showingStepEditView) {
-                StepEditView(step: .constant(step)) { updatedStep in
-                    // Handle the updated step
-                    if let index = goal.dailySteps.firstIndex(where: { $0.id == updatedStep.id }) {
-                        goal.dailySteps[index] = updatedStep
-                    } else {
-                        goal.dailySteps.append(updatedStep)
-                    }
-                    refreshID = UUID() // To refresh the view
+
+            if let endDate = step.endDate {
+                HStack {
+                    Image(systemName: "calendar")
+                        .foregroundColor(.secondary)
+                    Text(endDate, style: .date)
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .foregroundColor(.secondary)
                 }
             }
         }
+        .padding()
+        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+        .sheet(isPresented: $showingStepEditView) {
+            StepEditorView(step: step.content) { updatedContent, updatedEndDate in
+                updateStep(content: updatedContent, endDate: updatedEndDate)
+            }
+        }
+    }
+
+    private func updateStep(content: NSAttributedString, endDate: Date?) {
+        step.content = content
+        step.endDate = endDate
+        refreshID = UUID()
     }
 }
 
@@ -300,9 +351,9 @@ struct GoalDetailView_Previews: PreviewProvider {
 struct StepEditorView: View {
     @State private var attributedText: NSAttributedString
     @State private var endDate: Date?
-    @State private var selectedRange: NSRange = NSRange(location: 0, length: 0)
-    var onSave: (NSAttributedString, Date?) -> Void
+    @State private var showingDatePicker = false
     @Environment(\.presentationMode) var presentationMode
+    var onSave: (NSAttributedString, Date?) -> Void
 
     init(step: NSAttributedString, onSave: @escaping (NSAttributedString, Date?) -> Void) {
         _attributedText = State(initialValue: step)
@@ -311,11 +362,32 @@ struct StepEditorView: View {
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                RichTextEditorView(text: $attributedText, endDate: $endDate)
-                    .padding()
+            Form {
+                Section(header: Text("Step Content")) {
+                    TextEditor(text: Binding(
+                        get: { attributedText.string },
+                        set: { attributedText = NSAttributedString(string: $0) }
+                    ))
+                    .frame(minHeight: 100)
+                }
+
+                Section(header: Text("End Date (Optional)")) {
+                    Toggle(isOn: Binding(
+                        get: { endDate != nil },
+                        set: { if $0 { endDate = Date() } else { endDate = nil } }
+                    )) {
+                        Text("Set End Date")
+                    }
+
+                    if endDate != nil {
+                        DatePicker("End Date", selection: Binding(
+                            get: { endDate ?? Date() },
+                            set: { endDate = $0 }
+                        ), displayedComponents: .date)
+                    }
+                }
             }
-            .navigationTitle("New Step")
+            .navigationTitle(attributedText.string.isEmpty ? "Add Step" : "Edit Step")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
