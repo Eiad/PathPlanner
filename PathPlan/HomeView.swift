@@ -16,39 +16,114 @@ struct HomeView: View {
     
     var body: some View {
         NavigationView {
+            ZStack {
+                VStack(spacing: 0) {
+                    headerSection
+                    bodySection
+                }
+                .background(backgroundGradient)
+                .ignoresSafeArea(.all, edges: .top)
+                
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        addNewGoalButton
+                            .padding(.trailing, 20)
+                            .padding(.bottom, 20)
+                    }
+                }
+            }
+        }
+        .accentColor(.purple)
+        .sheet(isPresented: $showingAddGoalView) {
+            AddGoalView()
+        }
+    }
+    
+    private var headerSection: some View {
+        VStack(spacing: 16) {
+            Text("PathPlan")
+                .font(.system(size: 40, weight: .bold, design: .rounded))
+                .foregroundColor(.white)
+            
+            Text("Achieve Your Dreams")
+                .font(.system(size: 20, weight: .medium, design: .rounded))
+                .foregroundColor(.white.opacity(0.8))
+        }
+        .frame(height: 180) // Increased height
+        .frame(maxWidth: .infinity)
+        .padding(.top, 60) // Added top padding
+        .background(
+            LinearGradient(gradient: Gradient(colors: [Color.purple, Color.blue]),
+                           startPoint: .topLeading,
+                           endPoint: .bottomTrailing)
+        )
+    }
+    
+    private var bodySection: some View {
+        GeometryReader { geometry in
             ScrollView {
                 VStack(spacing: 20) {
                     Text("My Goals")
                         .font(.system(size: 32, weight: .bold, design: .rounded))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal)
+                        .padding(.top)
                     
-                    ForEach(goals) { goal in
-                        NavigationLink(destination: GoalDetailView(goal: goal)) {
-                            GoalCardView(goal: goal)  // Changed from GoalCard to GoalCardView
+                    if goals.isEmpty {
+                        encouragingText
+                            .frame(height: geometry.size.height - 250) // Adjust this value as needed
+                    } else {
+                        ForEach(goals) { goal in
+                            NavigationLink(destination: GoalDetailView(goal: goal)) {
+                                GoalCardView(goal: goal)
+                            }
                         }
                     }
                 }
-                .padding(.top)
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        showingAddGoalView = true
-                    }) {
-                        Image(systemName: "plus")
-                            .foregroundColor(.purple)
-                    }
-                }
-            }
-            .sheet(isPresented: $showingAddGoalView) {
-                AddGoalView()
+                .padding(.bottom)
             }
         }
-        .background(backgroundGradient)  // Apply the background gradient
     }
- 
+    
+    private var encouragingText: some View {
+        VStack(spacing: 24) {
+            Image(systemName: "star.circle.fill")
+                .font(.system(size: 80))
+                .foregroundColor(.purple)
+            
+            Text("Ready to achieve greatness?")
+                .font(.system(size: 24, weight: .bold, design: .rounded))
+            
+            Text("Tap the '+' button to add your first goal and start your journey!")
+                .font(.system(size: 16, design: .rounded))
+                .multilineTextAlignment(.center)
+                .foregroundColor(.secondary)
+                .padding(.horizontal)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding()
+    }
+    
+    private var addNewGoalButton: some View {
+        Button(action: {
+            showingAddGoalView = true
+        }) {
+            Image(systemName: "plus")
+                .font(.system(size: 24, weight: .bold))
+                .foregroundColor(.white)
+                .frame(width: 60, height: 60)
+                .background(
+                    LinearGradient(gradient: Gradient(colors: [Color.purple, Color.blue]),
+                                   startPoint: .topLeading,
+                                   endPoint: .bottomTrailing)
+                )
+                .clipShape(Circle())
+                .shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 3)
+        }
+    }
+    
     private var backgroundGradient: some View {
         LinearGradient(
             gradient: Gradient(colors: [
@@ -58,7 +133,6 @@ struct HomeView: View {
             startPoint: .top,
             endPoint: .bottom
         )
-        .edgesIgnoringSafeArea(.all)
     }
 }
 
@@ -69,7 +143,7 @@ struct GoalCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(goal.title)
-                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .font(.system(size: 22, weight: .bold, design: .rounded))
                 .foregroundColor(colorScheme == .dark ? .white : .black)
             
             ProgressView(value: goal.progress)
@@ -89,7 +163,7 @@ struct GoalCardView: View {
                 .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : .white)
                 .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
         )
-        .transition(.scale.combined(with: .opacity))
+        .padding(.horizontal)
     }
     
     private func formatDate(_ date: Date) -> String {
