@@ -92,8 +92,8 @@ struct GoalDetailView: View {
         }
         .background(Color(UIColor.systemGroupedBackground))
         .sheet(isPresented: $showingStepEditor) {
-            StepEditorView(step: newStep.content) { attributedText, images, endDate in
-                addStep(attributedText: attributedText, images: images, endDate: endDate)
+            StepEditorView(step: newStep.content) { attributedText, endDate in
+                addStep(attributedText: attributedText, endDate: endDate)
             }
         }
         .sheet(isPresented: $showingGoalEditor) {
@@ -151,7 +151,7 @@ struct GoalDetailView: View {
 
     private func stepRow(title: String, steps: [Step], type: StepType) -> some View {
         HStack {
-            NavigationLink(destination: StepListView(title: title, goal: goal, stepType: type)) {
+            NavigationLink(destination: StepListView(title: title, goal: goal, stepType: type, refreshID: $refreshID)) {
                 HStack {
                     Image(systemName: iconForStepType(type))
                         .font(.system(size: 24))
@@ -204,24 +204,15 @@ struct GoalDetailView: View {
         }
     }
 
-    private func addStep(attributedText: NSAttributedString, images: [UIImage], endDate: Date?) {
+    private func addStep(attributedText: NSAttributedString, endDate: Date?) {
         guard !attributedText.string.isEmpty else { return }
         
-        let imageStrings = images.map { convertImageToBase64String(img: $0) }
-        let fullStepContent = NSMutableAttributedString(attributedString: attributedText)
-        for imageString in imageStrings {
-            fullStepContent.append(NSAttributedString(string: "\n[IMAGE:\(imageString)]"))
-        }
+        let newStep = Step(content: attributedText, endDate: endDate)
         
-        let newStep = Step(content: fullStepContent, endDate: endDate)
-        
-        switch selectedStepType {
-        case .daily:
+        if let index = goal.dailySteps.firstIndex(where: { $0.id == newStep.id }) {
+            goal.dailySteps[index] = newStep
+        } else {
             goal.dailySteps.append(newStep)
-        case .weekly:
-            goal.weeklySteps.append(newStep)
-        case .monthly:
-            goal.monthlySteps.append(newStep)
         }
         
         self.newStep = Step(content: NSAttributedString(string: ""))
@@ -244,6 +235,7 @@ struct StepListView: View {
     let title: String
     @ObservedObject var goal: Goal
     let stepType: GoalDetailView.StepType
+    @Binding var refreshID: UUID
 
     var steps: [Step] {
         switch stepType {
@@ -259,7 +251,7 @@ struct StepListView: View {
     var body: some View {
         List {
             ForEach(steps, id: \.id) { step in
-                StepView(step: step)
+                StepView(step: step, goal: goal, refreshID: $refreshID)
             }
         }
         .navigationTitle(title)
@@ -268,9 +260,10 @@ struct StepListView: View {
 
 struct StepView: View {
     let step: Step
-    @State private var selectedImage: UIImage?
-    @State private var showingImagePreview = false
-    
+    @ObservedObject var goal: Goal
+    @Binding var refreshID: UUID
+    @State private var showingStepEditView = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(AttributedString(step.content))
@@ -278,60 +271,19 @@ struct StepView: View {
                 .background(Color(.systemBackground))
                 .cornerRadius(8)
             
-            if !extractImages(from: step.content).isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(extractImages(from: step.content), id: \.self) { imageData in
-                            if let uiImage = UIImage(data: imageData) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 60, height: 60)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                                    .onTapGesture {
-                                        selectedImage = uiImage
-                                        showingImagePreview = true
-                                    }
-                            }
-                        }
+            Button("Edit") {
+                showingStepEditView = true
+            }
+            .sheet(isPresented: $showingStepEditView) {
+                StepEditView(step: .constant(step)) { updatedStep in
+                    // Handle the updated step
+                    if let index = goal.dailySteps.firstIndex(where: { $0.id == updatedStep.id }) {
+                        goal.dailySteps[index] = updatedStep
+                    } else {
+                        goal.dailySteps.append(updatedStep)
                     }
+                    refreshID = UUID() // To refresh the view
                 }
-                .padding(.horizontal)
-            }
-        }
-        .sheet(isPresented: $showingImagePreview) {
-            if let image = selectedImage {
-                ImagePreviewView(image: image)
-            }
-        }
-    }
-    
-    func extractImages(from content: NSAttributedString) -> [Data] {
-        content.string.components(separatedBy: "\n")
-            .filter { $0.starts(with: "[IMAGE:") }
-            .compactMap { component in
-                let start = component.index(component.startIndex, offsetBy: 7)
-                let end = component.index(component.endIndex, offsetBy: -1)
-                let base64String = String(component[start..<end])
-                return Data(base64Encoded: base64String)
-            }
-    }
-}
-
-struct ImagePreviewView: View {
-    let image: UIImage
-    @Environment(\.presentationMode) var presentationMode
-    
-    var body: some View {
-        NavigationView {
-            GeometryReader { geometry in
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                    .navigationBarItems(trailing: Button("Done") {
-                        presentationMode.wrappedValue.dismiss()
-                    })
             }
         }
     }
@@ -347,13 +299,12 @@ struct GoalDetailView_Previews: PreviewProvider {
 
 struct StepEditorView: View {
     @State private var attributedText: NSAttributedString
-    @State private var attachedImages: [UIImage] = []
     @State private var endDate: Date?
     @State private var selectedRange: NSRange = NSRange(location: 0, length: 0)
-    var onSave: (NSAttributedString, [UIImage], Date?) -> Void
+    var onSave: (NSAttributedString, Date?) -> Void
     @Environment(\.presentationMode) var presentationMode
 
-    init(step: NSAttributedString, onSave: @escaping (NSAttributedString, [UIImage], Date?) -> Void) {
+    init(step: NSAttributedString, onSave: @escaping (NSAttributedString, Date?) -> Void) {
         _attributedText = State(initialValue: step)
         self.onSave = onSave
     }
@@ -361,7 +312,7 @@ struct StepEditorView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                RichTextEditorView(text: $attributedText, attachedImages: $attachedImages, endDate: $endDate)
+                RichTextEditorView(text: $attributedText, endDate: $endDate)
                     .padding()
             }
             .navigationTitle("New Step")
@@ -374,7 +325,7 @@ struct StepEditorView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        onSave(attributedText, attachedImages, endDate)
+                        onSave(attributedText, endDate)
                         presentationMode.wrappedValue.dismiss()
                     }
                 }
@@ -385,7 +336,6 @@ struct StepEditorView: View {
 
 struct RichTextEditorView: View {
     @Binding var text: NSAttributedString
-    @Binding var attachedImages: [UIImage]
     @Binding var endDate: Date?
     @State private var showingDatePicker = false
     @State private var selectedRange: NSRange = NSRange(location: 0, length: 0)

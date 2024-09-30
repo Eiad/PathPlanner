@@ -15,6 +15,7 @@
 		5E2F21AE2CA95C5800D80EB2 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E2F21AD2CA95C5800D80EB2 /* HomeView.swift */; };
 		5E2F21B02CA95C6C00D80EB2 /* GoalDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E2F21AF2CA95C6C00D80EB2 /* GoalDetailView.swift */; };
 		5E2F21B22CA95D1400D80EB2 /* item.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E2F21B12CA95D1400D80EB2 /* item.swift */; };
+		5E57B4CA2CAB2DF800D4903B /* StepEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E57B4C92CAB2DF800D4903B /* StepEditView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +28,7 @@
 		5E2F21AD2CA95C5800D80EB2 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		5E2F21AF2CA95C6C00D80EB2 /* GoalDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalDetailView.swift; sourceTree = "<group>"; };
 		5E2F21B12CA95D1400D80EB2 /* item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = item.swift; sourceTree = "<group>"; };
+		5E57B4C92CAB2DF800D4903B /* StepEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepEditView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -67,6 +69,7 @@
 				5E2F21AD2CA95C5800D80EB2 /* HomeView.swift */,
 				5E2F21AF2CA95C6C00D80EB2 /* GoalDetailView.swift */,
 				5E2F21B12CA95D1400D80EB2 /* item.swift */,
+				5E57B4C92CAB2DF800D4903B /* StepEditView.swift */,
 			);
 			path = PathPlan;
 			sourceTree = "<group>";
@@ -152,6 +155,7 @@
 				5E2F21B02CA95C6C00D80EB2 /* GoalDetailView.swift in Sources */,
 				5E2F219A2CA9574200D80EB2 /* PathPlanApp.swift in Sources */,
 				5E2F21AC2CA959AB00D80EB2 /* Goal.swift in Sources */,
+				5E57B4CA2CAB2DF800D4903B /* StepEditView.swift in Sources */,
 				5E2F21AE2CA95C5800D80EB2 /* HomeView.swift in Sources */,
 				5E2F21B22CA95D1400D80EB2 /* item.swift in Sources */,
 				5E2F21AA2CA9584E00D80EB2 /* AddGoalView.swift in Sources */,
