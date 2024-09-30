@@ -7,9 +7,9 @@ struct AddGoalView: View {
     @State private var title: String = ""
     @State private var startDate: Date = Date()
     @State private var endDate: Date = Date().addingTimeInterval(86400 * 30)
-    @State private var category: String = ""
+    @State private var category: String = "Personal"
     
-    let categories = ["Personal", "Work", "Health", "Education", "Finance"]
+    let categories = ["Personal", "Work", "Health", "Education", "Finance", "Other"]
     
     var body: some View {
         NavigationView {
@@ -33,6 +33,7 @@ struct AddGoalView: View {
                     }
                     .pickerStyle(MenuPickerStyle())
                     .font(.system(size: 16, weight: .regular, design: .rounded))
+                    .accentColor(.purple)
                 }
                 
                 Section {
@@ -56,7 +57,7 @@ struct AddGoalView: View {
     }
     
     private func saveGoal() {
-        let newGoal = Goal(title: title, startDate: startDate, endDate: endDate, progress: 0.0)
+        let newGoal = Goal(title: title, startDate: startDate, endDate: endDate, progress: 0.0, category: category)
         modelContext.insert(newGoal)
         dismiss()
     }

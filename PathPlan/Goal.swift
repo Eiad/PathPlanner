@@ -11,13 +11,15 @@ final class Goal: ObservableObject {
     @Relationship(deleteRule: .cascade) var dailySteps: [Step]
     @Relationship(deleteRule: .cascade) var weeklySteps: [Step]
     @Relationship(deleteRule: .cascade) var monthlySteps: [Step]
+    var category: String?
     
-    init(title: String, startDate: Date, endDate: Date, progress: Double = 0.0) {
+    init(title: String, startDate: Date, endDate: Date, progress: Double = 0.0, category: String? = nil) {
         self.id = UUID()
         self.title = title
         self.startDate = startDate
         self.endDate = endDate
         self.progress = progress
+        self.category = category
         self.dailySteps = []
         self.weeklySteps = []
         self.monthlySteps = []

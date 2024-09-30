@@ -47,11 +47,12 @@ struct AttributedText: UIViewRepresentable {
 }
 
 struct GoalDetailView: View {
-    @ObservedObject var goal: Goal
+    @Bindable var goal: Goal
     @Environment(\.presentationMode) var presentationMode
     @State private var newStep = Step(content: NSAttributedString(string: ""))
     @State private var selectedStepType: StepType = .daily
     @State private var showingStepEditor = false
+    @State private var showingGoalEditor = false
     @Environment(\.colorScheme) private var colorScheme
     @State private var refreshID = UUID()
 
@@ -68,6 +69,11 @@ struct GoalDetailView: View {
                     .font(.system(size: 32, weight: .bold, design: .rounded))
                     .foregroundColor(.primary)
                 
+                Text(goal.category ?? "General Goal")
+                    .font(.system(size: 18, weight: .medium, design: .rounded))
+                    .foregroundColor(.secondary)
+                    .padding(.bottom, 8)
+                
                 dateRangeView
                 progressView
                 stepsSection
@@ -79,7 +85,7 @@ struct GoalDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Edit") {
-                    // Edit goal action
+                    showingGoalEditor = true
                 }
                 .foregroundColor(.purple)
             }
@@ -88,6 +94,11 @@ struct GoalDetailView: View {
         .sheet(isPresented: $showingStepEditor) {
             StepEditorView(step: newStep.content) { attributedText, images, endDate in
                 addStep(attributedText: attributedText, images: images, endDate: endDate)
+            }
+        }
+        .sheet(isPresented: $showingGoalEditor) {
+            GoalEditorView(goal: goal) {
+                refreshID = UUID()
             }
         }
     }
@@ -511,5 +522,67 @@ struct ImagePicker: UIViewControllerRepresentable {
             }
             parent.presentationMode.wrappedValue.dismiss()
         }
+    }
+}
+
+struct GoalEditorView: View {
+    @Bindable var goal: Goal
+    @State private var title: String
+    @State private var startDate: Date
+    @State private var endDate: Date
+    @State private var selectedCategory: String
+    @Environment(\.presentationMode) var presentationMode
+    var onSave: () -> Void
+
+    let categories = ["Personal", "Work", "Health", "Education", "Finance", "Other"]
+
+    init(goal: Goal, onSave: @escaping () -> Void) {
+        self.goal = goal
+        _title = State(initialValue: goal.title)
+        _startDate = State(initialValue: goal.startDate)
+        _endDate = State(initialValue: goal.endDate)
+        _selectedCategory = State(initialValue: goal.category ?? "Other")
+        self.onSave = onSave
+    }
+
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("Goal Details")) {
+                    TextField("Title", text: $title)
+                    DatePicker("Start Date", selection: $startDate, displayedComponents: .date)
+                    DatePicker("End Date", selection: $endDate, displayedComponents: .date)
+                    Picker("Category", selection: $selectedCategory) {
+                        ForEach(categories, id: \.self) {
+                            Text($0)
+                        }
+                    }
+                    .accentColor(.purple)
+                }
+            }
+            .navigationTitle("Edit Goal")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        saveGoal()
+                        onSave()
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private func saveGoal() {
+        goal.title = title
+        goal.startDate = startDate
+        goal.endDate = endDate
+        goal.category = selectedCategory
     }
 }
