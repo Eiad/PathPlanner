@@ -253,14 +253,13 @@ struct StepListView: View {
         ZStack {
             Color(UIColor.systemGroupedBackground).edgesIgnoringSafeArea(.all)
             
-            ScrollView {
-                LazyVStack(spacing: 16) {
-                    ForEach(steps, id: \.id) { step in
-                        StepCardView(step: step, goal: goal, refreshID: $refreshID)
-                    }
+            List {
+                ForEach(steps, id: \.id) { step in
+                    StepCardView(step: step, goal: goal, refreshID: $refreshID)
                 }
-                .padding()
+                .onDelete(perform: deleteStep)
             }
+            .listStyle(InsetGroupedListStyle())
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
@@ -287,6 +286,18 @@ struct StepListView: View {
             goal.weeklySteps.append(newStep)
         case .monthly:
             goal.monthlySteps.append(newStep)
+        }
+        refreshID = UUID()
+    }
+
+    private func deleteStep(at offsets: IndexSet) {
+        switch stepType {
+        case .daily:
+            goal.dailySteps.remove(atOffsets: offsets)
+        case .weekly:
+            goal.weeklySteps.remove(atOffsets: offsets)
+        case .monthly:
+            goal.monthlySteps.remove(atOffsets: offsets)
         }
         refreshID = UUID()
     }
@@ -325,7 +336,6 @@ struct StepCardView: View {
         .padding()
         .background(Color(UIColor.secondarySystemGroupedBackground))
         .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
         .sheet(isPresented: $showingStepEditView) {
             StepEditorView(step: step.content) { updatedContent, updatedEndDate in
                 updateStep(content: updatedContent, endDate: updatedEndDate)
