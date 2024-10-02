@@ -356,31 +356,17 @@ struct StepEditorView: View {
     @State private var endDate: Date?
     @State private var showingDatePicker = false
     @State private var selectedRange: NSRange = NSRange(location: 0, length: 0)
-    @State private var fontSize: FontSize = .medium
+    @State private var fontSize: CGFloat = 17
     @State private var isBold = false
     @State private var isItalic = false
     @State private var isUnderline = false
     @State private var isStrikethrough = false
     @State private var textColor: Color = .primary
-    @State private var showingFormatting = false
+    @State private var showingFontSizePicker = false
     @Environment(\.presentationMode) var presentationMode
     var onSave: (NSAttributedString, Date?) -> Void
 
-    enum FontSize: CGFloat, CaseIterable, Identifiable {
-        case small = 14
-        case medium = 17
-        case large = 20
-        
-        var id: CGFloat { self.rawValue }
-        
-        var name: String {
-            switch self {
-            case .small: return "Small"
-            case .medium: return "Medium"
-            case .large: return "Large"
-            }
-        }
-    }
+    let fontSizes: [CGFloat] = [12, 14, 16, 18, 20, 24, 28, 32]
 
     init(step: NSAttributedString, onSave: @escaping (NSAttributedString, Date?) -> Void) {
         _attributedText = State(initialValue: step)
@@ -451,6 +437,25 @@ struct StepEditorView: View {
             .padding()
             .presentationDetents([.medium])
         }
+        .sheet(isPresented: $showingFontSizePicker) {
+            List(fontSizes, id: \.self) { size in
+                Button(action: {
+                    fontSize = size
+                    applyFontSize()
+                    showingFontSizePicker = false
+                }) {
+                    HStack {
+                        Text("\(Int(size))")
+                        Spacer()
+                        if fontSize == size {
+                            Image(systemName: "checkmark")
+                                .foregroundColor(.accentColor)
+                        }
+                    }
+                }
+            }
+            .presentationDetents([.medium])
+        }
     }
 
     private var formattingToolbar: some View {
@@ -473,14 +478,16 @@ struct StepEditorView: View {
                     .onChange(of: textColor) { _ in applyTextColor() }
             }
             HStack {
-                Picker("Size", selection: $fontSize) {
-                    ForEach(FontSize.allCases) { size in
-                        Text(size.name).tag(size)
+                Button(action: { showingFontSizePicker = true }) {
+                    HStack {
+                        Image(systemName: "textformat.size")
+                        Text("\(Int(fontSize))")
                     }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.secondary.opacity(0.2))
+                    .cornerRadius(8)
                 }
-                .pickerStyle(SegmentedPickerStyle())
-                .frame(maxWidth: 200)
-                .onChange(of: fontSize) { _ in applyFontSize() }
                 Spacer()
                 Button(action: { showingDatePicker = true }) {
                     Image(systemName: "calendar")
@@ -497,7 +504,7 @@ struct StepEditorView: View {
         
         switch attributeType {
         case .bold, .italic:
-            let currentFont = mutableAttrString.attribute(.font, at: selectedRange.location, effectiveRange: nil) as? UIFont ?? UIFont.systemFont(ofSize: fontSize.rawValue)
+            let currentFont = mutableAttrString.attribute(.font, at: selectedRange.location, effectiveRange: nil) as? UIFont ?? UIFont.systemFont(ofSize: fontSize)
             var traits = currentFont.fontDescriptor.symbolicTraits
             if attributeType == .bold {
                 traits = isBold ? traits.subtracting(.traitBold) : traits.union(.traitBold)
@@ -507,7 +514,7 @@ struct StepEditorView: View {
                 isItalic.toggle()
             }
             if let newDescriptor = currentFont.fontDescriptor.withSymbolicTraits(traits) {
-                let newFont = UIFont(descriptor: newDescriptor, size: fontSize.rawValue)
+                let newFont = UIFont(descriptor: newDescriptor, size: fontSize)
                 mutableAttrString.addAttribute(.font, value: newFont, range: selectedRange)
             }
         case .underline:
@@ -537,14 +544,31 @@ struct StepEditorView: View {
     }
 
     private func applyFontSize() {
-        guard selectedRange.location != NSNotFound else { return }
         let mutableAttrString = NSMutableAttributedString(attributedString: attributedText)
         
-        let currentFont = mutableAttrString.attribute(.font, at: selectedRange.location, effectiveRange: nil) as? UIFont ?? UIFont.systemFont(ofSize: fontSize.rawValue)
-        let newFont = currentFont.withSize(fontSize.rawValue)
+        let range: NSRange
+        if selectedRange.location != NSNotFound && selectedRange.length > 0 {
+            range = selectedRange
+        } else {
+            range = NSRange(location: 0, length: mutableAttrString.length)
+        }
         
-        mutableAttrString.addAttribute(.font, value: newFont, range: selectedRange)
+        mutableAttrString.enumerateAttribute(.font, in: range, options: []) { (value, range, stop) in
+            if let font = value as? UIFont {
+                let newFont = font.withSize(fontSize)
+                mutableAttrString.addAttribute(.font, value: newFont, range: range)
+            } else {
+                let newFont = UIFont.systemFont(ofSize: fontSize)
+                mutableAttrString.addAttribute(.font, value: newFont, range: range)
+            }
+        }
+        
         attributedText = mutableAttrString
+        
+        // Update the selected range to maintain the cursor position
+        if selectedRange.location != NSNotFound {
+            selectedRange = NSRange(location: selectedRange.location, length: 0)
+        }
     }
 }
 
