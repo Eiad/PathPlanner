@@ -475,7 +475,9 @@ struct StepEditorView: View {
                 }
                 Spacer()
                 ColorPicker("", selection: $textColor)
-                    .onChange(of: textColor) { _ in applyTextColor() }
+                    .onChange(of: textColor) { _, newValue in
+                        applyTextColor()
+                    }
             }
             HStack {
                 Button(action: { showingFontSizePicker = true }) {
@@ -682,9 +684,9 @@ struct RichTextEditorView: View {
             .padding()
             .presentationDetents([.medium])
         }
-        .onChange(of: fontSize) { _ in applyFormatting() }
-        .onChange(of: isBold) { _ in applyFormatting() }
-        .onChange(of: textColor) { _ in applyFormatting() }
+        .onChange(of: fontSize) { _, newValue in applyFormatting() }
+        .onChange(of: isBold) { _, newValue in applyFormatting() }
+        .onChange(of: textColor) { _, newValue in applyFormatting() }
     }
 
     private func toggleBold() {
