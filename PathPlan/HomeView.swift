@@ -51,9 +51,9 @@ struct HomeView: View {
                 .font(.system(size: 20, weight: .medium, design: .rounded))
                 .foregroundColor(.white.opacity(0.8))
         }
-        .frame(height: 180) // Increased height
+        .frame(height: 180)
         .frame(maxWidth: .infinity)
-        .padding(.top, 60) // Added top padding
+        .padding(.top, 60) 
         .background(
             LinearGradient(gradient: Gradient(colors: [Color.purple, Color.blue]),
                            startPoint: .topLeading,
