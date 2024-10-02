@@ -350,14 +350,6 @@ struct StepCardView: View {
     }
 }
 
-struct GoalDetailView_Previews: PreviewProvider {
-    static var previews: some View {
-        NavigationView {
-            GoalDetailView(goal: Goal(title: "Sample Goal", startDate: Date(), endDate: Date().addingTimeInterval(86400 * 30)))
-        }
-    }
-}
-
 struct StepEditorView: View {
     @State private var attributedText: NSAttributedString
     @State private var endDate: Date?
