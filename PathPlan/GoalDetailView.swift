@@ -17,6 +17,7 @@ struct AttributedText: UIViewRepresentable {
         textView.isSelectable = true
         textView.isEditable = true
         textView.delegate = context.coordinator
+        textView.allowsEditingTextAttributes = true
         return textView
     }
     
@@ -354,13 +355,32 @@ struct StepEditorView: View {
     @State private var attributedText: NSAttributedString
     @State private var endDate: Date?
     @State private var showingDatePicker = false
-    @State private var fontSize: CGFloat = 17
+    @State private var selectedRange: NSRange = NSRange(location: 0, length: 0)
+    @State private var fontSize: FontSize = .medium
     @State private var isBold = false
+    @State private var isItalic = false
+    @State private var isUnderline = false
+    @State private var isStrikethrough = false
     @State private var textColor: Color = .primary
     @State private var showingFormatting = false
-    @State private var selectedRange: NSRange = NSRange(location: 0, length: 0)
     @Environment(\.presentationMode) var presentationMode
     var onSave: (NSAttributedString, Date?) -> Void
+
+    enum FontSize: CGFloat, CaseIterable, Identifiable {
+        case small = 14
+        case medium = 17
+        case large = 20
+        
+        var id: CGFloat { self.rawValue }
+        
+        var name: String {
+            switch self {
+            case .small: return "Small"
+            case .medium: return "Medium"
+            case .large: return "Large"
+            }
+        }
+    }
 
     init(step: NSAttributedString, onSave: @escaping (NSAttributedString, Date?) -> Void) {
         _attributedText = State(initialValue: step)
@@ -388,38 +408,7 @@ struct StepEditorView: View {
                         .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
                 )
 
-                HStack {
-                    Button(action: { showingFormatting.toggle() }) {
-                        Image(systemName: "textformat")
-                            .foregroundColor(.accentColor)
-                    }
-                    Spacer()
-                    Button(action: { showingDatePicker = true }) {
-                        Image(systemName: "calendar")
-                            .foregroundColor(.accentColor)
-                    }
-                }
-                .padding(.horizontal)
-
-                if showingFormatting {
-                    HStack {
-                        Button(action: toggleBold) {
-                            Image(systemName: "bold")
-                                .foregroundColor(isBold ? .accentColor : .primary)
-                        }
-                        Picker("Size", selection: $fontSize) {
-                            Text("S").tag(CGFloat(14))
-                            Text("M").tag(CGFloat(17))
-                            Text("L").tag(CGFloat(20))
-                        }
-                        .pickerStyle(SegmentedPickerStyle())
-                        .frame(width: 120)
-                        ColorPicker("", selection: $textColor)
-                    }
-                    .padding(.horizontal)
-                    .transition(.move(edge: .top))
-                    .animation(.default, value: showingFormatting)
-                }
+                formattingToolbar
 
                 if let endDate = endDate {
                     HStack {
@@ -462,27 +451,125 @@ struct StepEditorView: View {
             .padding()
             .presentationDetents([.medium])
         }
-        .onChange(of: fontSize) { _ in applyFormatting() }
-        .onChange(of: isBold) { _ in applyFormatting() }
-        .onChange(of: textColor) { _ in applyFormatting() }
     }
 
-    private func toggleBold() {
-        isBold.toggle()
-        applyFormatting()
+    private var formattingToolbar: some View {
+        VStack(spacing: 8) {
+            HStack {
+                FormatButton(systemName: "bold", isSelected: $isBold) {
+                    toggleAttribute(.bold)
+                }
+                FormatButton(systemName: "italic", isSelected: $isItalic) {
+                    toggleAttribute(.italic)
+                }
+                FormatButton(systemName: "underline", isSelected: $isUnderline) {
+                    toggleAttribute(.underline)
+                }
+                FormatButton(systemName: "strikethrough", isSelected: $isStrikethrough) {
+                    toggleAttribute(.strikethrough)
+                }
+                Spacer()
+                ColorPicker("", selection: $textColor)
+                    .onChange(of: textColor) { _ in applyTextColor() }
+            }
+            HStack {
+                Picker("Size", selection: $fontSize) {
+                    ForEach(FontSize.allCases) { size in
+                        Text(size.name).tag(size)
+                    }
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                .frame(maxWidth: 200)
+                .onChange(of: fontSize) { _ in applyFontSize() }
+                Spacer()
+                Button(action: { showingDatePicker = true }) {
+                    Image(systemName: "calendar")
+                        .foregroundColor(.accentColor)
+                }
+            }
+        }
+        .padding(.horizontal)
     }
 
-    private func applyFormatting() {
+    private func toggleAttribute(_ attributeType: AttributeType) {
         guard selectedRange.location != NSNotFound else { return }
-        
         let mutableAttrString = NSMutableAttributedString(attributedString: attributedText)
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: fontSize, weight: isBold ? .bold : .regular),
-            .foregroundColor: UIColor(textColor)
-        ]
         
-        mutableAttrString.addAttributes(attributes, range: selectedRange)
+        switch attributeType {
+        case .bold, .italic:
+            let currentFont = mutableAttrString.attribute(.font, at: selectedRange.location, effectiveRange: nil) as? UIFont ?? UIFont.systemFont(ofSize: fontSize.rawValue)
+            var traits = currentFont.fontDescriptor.symbolicTraits
+            if attributeType == .bold {
+                traits = isBold ? traits.subtracting(.traitBold) : traits.union(.traitBold)
+                isBold.toggle()
+            } else {
+                traits = isItalic ? traits.subtracting(.traitItalic) : traits.union(.traitItalic)
+                isItalic.toggle()
+            }
+            if let newDescriptor = currentFont.fontDescriptor.withSymbolicTraits(traits) {
+                let newFont = UIFont(descriptor: newDescriptor, size: fontSize.rawValue)
+                mutableAttrString.addAttribute(.font, value: newFont, range: selectedRange)
+            }
+        case .underline:
+            if isUnderline {
+                mutableAttrString.removeAttribute(.underlineStyle, range: selectedRange)
+            } else {
+                mutableAttrString.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: selectedRange)
+            }
+            isUnderline.toggle()
+        case .strikethrough:
+            if isStrikethrough {
+                mutableAttrString.removeAttribute(.strikethroughStyle, range: selectedRange)
+            } else {
+                mutableAttrString.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: selectedRange)
+            }
+            isStrikethrough.toggle()
+        }
+        
         attributedText = mutableAttrString
+    }
+
+    private func applyTextColor() {
+        guard selectedRange.location != NSNotFound else { return }
+        let mutableAttrString = NSMutableAttributedString(attributedString: attributedText)
+        mutableAttrString.addAttribute(.foregroundColor, value: UIColor(textColor), range: selectedRange)
+        attributedText = mutableAttrString
+    }
+
+    private func applyFontSize() {
+        guard selectedRange.location != NSNotFound else { return }
+        let mutableAttrString = NSMutableAttributedString(attributedString: attributedText)
+        
+        let currentFont = mutableAttrString.attribute(.font, at: selectedRange.location, effectiveRange: nil) as? UIFont ?? UIFont.systemFont(ofSize: fontSize.rawValue)
+        let newFont = currentFont.withSize(fontSize.rawValue)
+        
+        mutableAttrString.addAttribute(.font, value: newFont, range: selectedRange)
+        attributedText = mutableAttrString
+    }
+}
+
+struct FormatButton: View {
+    let systemName: String
+    @Binding var isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .foregroundColor(isSelected ? .accentColor : .primary)
+                .frame(width: 30, height: 30)
+                .background(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
+                .cornerRadius(6)
+        }
+    }
+}
+
+extension UIFont {
+    func withTraits(_ traits: UIFontDescriptor.SymbolicTraits) -> UIFont {
+        guard let descriptor = fontDescriptor.withSymbolicTraits(traits) else {
+            return self
+        }
+        return UIFont(descriptor: descriptor, size: 0)
     }
 }
 
@@ -687,4 +774,11 @@ struct GoalEditorView: View {
         goal.endDate = endDate
         goal.category = selectedCategory
     }
+}
+
+enum AttributeType {
+    case bold
+    case italic
+    case underline
+    case strikethrough
 }
