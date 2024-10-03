@@ -238,6 +238,7 @@ struct StepListView: View {
     let stepType: GoalDetailView.StepType
     @Binding var refreshID: UUID
     @State private var showingAddStep = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var steps: [Step] {
         switch stepType {
@@ -263,11 +264,12 @@ struct StepListView: View {
             .listStyle(InsetGroupedListStyle())
         }
         .navigationTitle(title)
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { showingAddStep = true }) {
                     Image(systemName: "plus")
+                        .foregroundColor(.purple)
                 }
             }
         }
@@ -309,6 +311,7 @@ struct StepCardView: View {
     @ObservedObject var goal: Goal
     @Binding var refreshID: UUID
     @State private var showingStepEditView = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -320,9 +323,9 @@ struct StepCardView: View {
                     .foregroundColor(step.isDone ? .secondary : .primary)
                 Spacer()
                 Button(action: { showingStepEditView = true }) {
-                    Image(systemName: "pencil.circle.fill")
+                    Image(systemName: "pencil")
                         .foregroundColor(.purple)
-                        .font(.system(size: 24))
+                        .font(.system(size: 14, weight: .semibold))
                 }
             }
 
@@ -330,18 +333,29 @@ struct StepCardView: View {
                 HStack {
                     Image(systemName: "calendar")
                         .foregroundColor(.secondary)
+                        .font(.system(size: 12))
                     Text(endDate, style: .date)
-                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
                         .foregroundColor(.secondary)
                 }
             }
+            
+            Text(step.isDone ? "Completed" : "In Progress")
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundColor(step.isDone ? .green : .orange)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(step.isDone ? Color.green.opacity(0.1) : Color.orange.opacity(0.1))
+                )
         }
         .padding()
         .background(step.isDone ? Color.green.opacity(0.1) : Color(UIColor.secondarySystemGroupedBackground))
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(step.isDone ? Color.green : Color.clear, lineWidth: 2)
+                .stroke(step.isDone ? Color.green.opacity(0.5) : Color.clear, lineWidth: 2)
         )
         .sheet(isPresented: $showingStepEditView) {
             StepEditView(step: Binding(
@@ -357,7 +371,6 @@ struct StepCardView: View {
                     refreshID = UUID()
                 }
             )) { updatedStep in
-                // This closure is called when the step is saved
                 refreshID = UUID()
             }
         }
