@@ -14,20 +14,33 @@ struct StepEditView: View {
     @State private var attachedImages: [UIImage] = []
     @State private var endDate: Date?
     @State private var selectedRange: NSRange = NSRange(location: 0, length: 0)
+    @State private var isDone: Bool
     var onSave: (Step) -> Void
     @Environment(\.presentationMode) var presentationMode
 
     init(step: Binding<Step>, onSave: @escaping (Step) -> Void) {
         self._step = step
         self._attributedText = State(initialValue: step.wrappedValue.content)
+        self._isDone = State(initialValue: step.wrappedValue.isDone)
         self.onSave = onSave
     }
 
     var body: some View {
         NavigationView {
             ScrollView {
-                RichTextEditorView(text: $attributedText, endDate: $endDate)
+                VStack {
+                    RichTextEditorView(text: $attributedText, endDate: $endDate)
+                        .padding()
+                    
+                    Toggle(isOn: $isDone) {
+                        Text("Mark as Done")
+                            .font(.system(size: 16, weight: .medium, design: .rounded))
+                    }
                     .padding()
+                    .background(Color(.systemBackground))
+                    .cornerRadius(10)
+                    .padding(.horizontal)
+                }
             }
             .navigationTitle("Edit Step")
             .navigationBarTitleDisplayMode(.inline)
@@ -41,6 +54,7 @@ struct StepEditView: View {
                     Button("Save") {
                         step.content = attributedText
                         step.endDate = endDate
+                        step.isDone = isDone
                         onSave(step)
                         presentationMode.wrappedValue.dismiss()
                     }

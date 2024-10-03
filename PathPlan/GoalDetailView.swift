@@ -316,6 +316,8 @@ struct StepCardView: View {
                 Text(AttributedString(step.content))
                     .font(.system(size: 16, weight: .regular, design: .rounded))
                     .lineLimit(2)
+                    .strikethrough(step.isDone)
+                    .foregroundColor(step.isDone ? .secondary : .primary)
                 Spacer()
                 Button(action: { showingStepEditView = true }) {
                     Image(systemName: "pencil.circle.fill")
@@ -335,19 +337,30 @@ struct StepCardView: View {
             }
         }
         .padding()
-        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .background(step.isDone ? Color.green.opacity(0.1) : Color(UIColor.secondarySystemGroupedBackground))
         .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(step.isDone ? Color.green : Color.clear, lineWidth: 2)
+        )
         .sheet(isPresented: $showingStepEditView) {
-            StepEditorView(step: step.content) { updatedContent, updatedEndDate in
-                updateStep(content: updatedContent, endDate: updatedEndDate)
+            StepEditView(step: Binding(
+                get: { self.step },
+                set: { newStep in
+                    if let index = goal.dailySteps.firstIndex(where: { $0.id == newStep.id }) {
+                        goal.dailySteps[index] = newStep
+                    } else if let index = goal.weeklySteps.firstIndex(where: { $0.id == newStep.id }) {
+                        goal.weeklySteps[index] = newStep
+                    } else if let index = goal.monthlySteps.firstIndex(where: { $0.id == newStep.id }) {
+                        goal.monthlySteps[index] = newStep
+                    }
+                    refreshID = UUID()
+                }
+            )) { updatedStep in
+                // This closure is called when the step is saved
+                refreshID = UUID()
             }
         }
-    }
-
-    private func updateStep(content: NSAttributedString, endDate: Date?) {
-        step.content = content
-        step.endDate = endDate
-        refreshID = UUID()
     }
 }
 

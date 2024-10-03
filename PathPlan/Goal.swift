@@ -31,10 +31,12 @@ final class Step {
     var id: UUID
     @Attribute(.transformable(by: NSAttributedStringTransformer.self)) var content: NSAttributedString
     var endDate: Date?
+    var isDone: Bool
     
-    init(content: NSAttributedString, endDate: Date? = nil) {
+    init(content: NSAttributedString, endDate: Date? = nil, isDone: Bool = false) {
         self.id = UUID()
         self.content = content
         self.endDate = endDate
+        self.isDone = isDone
     }
 }
