@@ -168,7 +168,7 @@ struct GoalCardView: View {
             }
             
             ProgressView(value: goal.progress)
-                .progressViewStyle(RoundedRectProgressViewStyle(color: goal.isCompleted ? .green : .purple))
+                .progressViewStyle(RoundedRectProgressViewStyle(color: goal.progress >= 1.0 ? .green : .purple))
                 .frame(height: 8)
             
             HStack {
@@ -216,7 +216,7 @@ struct RoundedRectProgressViewStyle: ProgressViewStyle {
                     .foregroundColor(Color.secondary.opacity(0.2))
                 
                 RoundedRectangle(cornerRadius: 14)
-                    .frame(width: CGFloat(configuration.fractionCompleted ?? 0) * geometry.size.width, height: 8)
+                    .frame(width: min(CGFloat(configuration.fractionCompleted ?? 0) * geometry.size.width, geometry.size.width), height: 8)
                     .foregroundColor(color)
             }
         }

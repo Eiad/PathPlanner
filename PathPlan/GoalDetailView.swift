@@ -148,18 +148,9 @@ struct GoalDetailView: View {
                     .foregroundColor(.secondary)
             }
 
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.secondary.opacity(0.2))
-                        .frame(height: 16)
-
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(LinearGradient(gradient: Gradient(colors: [.purple, .blue]), startPoint: .leading, endPoint: .trailing))
-                        .frame(width: min(CGFloat(goal.progress) * geometry.size.width, geometry.size.width), height: 16)
-                }
-            }
-            .frame(height: 16)
+            ProgressView(value: goal.progress)
+                .progressViewStyle(RoundedRectProgressViewStyle(color: goal.isCompleted ? .green : .purple))
+                .frame(height: 8)
         }
         .padding()
         .background(Color(UIColor.secondarySystemGroupedBackground))
