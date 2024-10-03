@@ -258,8 +258,6 @@ struct GoalDetailView: View {
     }
 
     private func updateGoalCompletion() {
-        // The progress will be automatically calculated by the computed property
-        // We just need to trigger an update
         goal.objectWillChange.send()
     }
 }

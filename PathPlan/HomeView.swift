@@ -56,7 +56,8 @@ struct HomeView: View {
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .headerSpacing(top: 40, bottom: 20)
+        .padding(.top, 40)
+        .padding(.bottom, 20)
     }
     
     private var statisticsSection: some View {
@@ -153,6 +154,10 @@ struct GoalCardView: View {
                     .font(.system(size: 18, weight: .semibold, design: .rounded))
                     .foregroundColor(colorScheme == .dark ? .white : .black)
                 Spacer()
+                if goal.isCompleted {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                }
                 Text(goal.category ?? "")
                     .font(.system(size: 12, weight: .medium, design: .rounded))
                     .padding(.horizontal, 8)
@@ -163,7 +168,8 @@ struct GoalCardView: View {
             }
             
             ProgressView(value: goal.progress)
-                .progressViewStyle(RoundedRectProgressViewStyle())
+                .progressViewStyle(RoundedRectProgressViewStyle(color: goal.isCompleted ? .green : .purple))
+                .frame(height: 8)
             
             HStack {
                 Label(formatDate(goal.startDate), systemImage: "calendar")
@@ -176,18 +182,18 @@ struct GoalCardView: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(colorScheme == .dark ? Color(hex: "2A2A2A") : .white)
+                .fill(colorScheme == .dark ? Color("2A2A2A") : .white)
                 .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
         )
     }
     
-    private func formatDate(_ date: Date) -> String {
+    func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d, yyyy"
         return formatter.string(from: date)
     }
     
-    private func categoryColor(for category: String?) -> Color {
+    func categoryColor(for category: String?) -> Color {
         switch category {
         case "Personal": return .blue
         case "Work": return .orange
@@ -200,15 +206,19 @@ struct GoalCardView: View {
 }
 
 struct RoundedRectProgressViewStyle: ProgressViewStyle {
+    var color: Color = .purple
+    
     func makeBody(configuration: Configuration) -> some View {
-        ZStack(alignment: .leading) {
-            RoundedRectangle(cornerRadius: 14)
-                .frame(height: 8)
-                .foregroundColor(Color.secondary.opacity(0.2))
-            
-            RoundedRectangle(cornerRadius: 14)
-                .frame(width: CGFloat(configuration.fractionCompleted ?? 0) * 100, height: 8)
-                .foregroundColor(.purple)
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 14)
+                    .frame(height: 8)
+                    .foregroundColor(Color.secondary.opacity(0.2))
+                
+                RoundedRectangle(cornerRadius: 14)
+                    .frame(width: CGFloat(configuration.fractionCompleted ?? 0) * geometry.size.width, height: 8)
+                    .foregroundColor(color)
+            }
         }
     }
 }
@@ -227,7 +237,7 @@ extension Color {
         case 8: // ARGB (32-bit)
             (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
         default:
-            (a, r, g, b) = (1, 1, 1, 0)
+            (a, r, g, b) = (255, 0, 0, 0)
         }
 
         self.init(
@@ -244,55 +254,5 @@ struct HomeView_Previews: PreviewProvider {
     static var previews: some View {
         HomeView()
             .modelContainer(for: Goal.self, inMemory: true)
-    }
-}
-
-// Add this extension to create a custom modifier
-extension View {
-    func navigationBarTitleTextColor(_ color: Color) -> some View {
-        self.modifier(NavigationBarTitleTextColor(color: color))
-    }
-}
-
-// Custom modifier to change navigation bar title color and add top padding
-struct NavigationBarTitleTextColor: ViewModifier {
-    var color: Color
-    
-    func body(content: Content) -> some View {
-        content
-            .padding(.top, 20) // Add top padding
-            .foregroundColor(color)
-    }
-}
-
-struct TopSpacedNavigationTitle: ViewModifier {
-    let topPadding: CGFloat
-    
-    func body(content: Content) -> some View {
-        content
-            .padding(.top, topPadding)
-    }
-}
-
-extension View {
-    func topSpacedNavigationTitle(padding: CGFloat = 20) -> some View {
-        self.modifier(TopSpacedNavigationTitle(topPadding: padding))
-    }
-}
-
-struct HeaderSpacing: ViewModifier {
-    let topPadding: CGFloat
-    let bottomPadding: CGFloat
-    
-    func body(content: Content) -> some View {
-        content
-            .padding(.top, topPadding)
-            .padding(.bottom, bottomPadding)
-    }
-}
-
-extension View {
-    func headerSpacing(top: CGFloat = 40, bottom: CGFloat = 20) -> some View {
-        self.modifier(HeaderSpacing(topPadding: top, bottomPadding: bottom))
     }
 }
