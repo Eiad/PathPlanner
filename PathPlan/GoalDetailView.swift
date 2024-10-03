@@ -238,7 +238,6 @@ struct StepListView: View {
     let stepType: GoalDetailView.StepType
     @Binding var refreshID: UUID
     @State private var showingAddStep = false
-    @Environment(\.colorScheme) private var colorScheme
 
     var steps: [Step] {
         switch stepType {
@@ -264,12 +263,11 @@ struct StepListView: View {
             .listStyle(InsetGroupedListStyle())
         }
         .navigationTitle(title)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { showingAddStep = true }) {
                     Image(systemName: "plus")
-                        .foregroundColor(.purple)
                 }
             }
         }
@@ -311,7 +309,6 @@ struct StepCardView: View {
     @ObservedObject var goal: Goal
     @Binding var refreshID: UUID
     @State private var showingStepEditView = false
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -319,13 +316,11 @@ struct StepCardView: View {
                 Text(AttributedString(step.content))
                     .font(.system(size: 16, weight: .regular, design: .rounded))
                     .lineLimit(2)
-                    .strikethrough(step.isDone)
-                    .foregroundColor(step.isDone ? .secondary : .primary)
                 Spacer()
                 Button(action: { showingStepEditView = true }) {
-                    Image(systemName: "pencil")
+                    Image(systemName: "pencil.circle.fill")
                         .foregroundColor(.purple)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 24))
                 }
             }
 
@@ -333,47 +328,26 @@ struct StepCardView: View {
                 HStack {
                     Image(systemName: "calendar")
                         .foregroundColor(.secondary)
-                        .font(.system(size: 12))
                     Text(endDate, style: .date)
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
                         .foregroundColor(.secondary)
                 }
             }
-            
-            Text(step.isDone ? "Completed" : "In Progress")
-                .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundColor(step.isDone ? .green : .orange)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(step.isDone ? Color.green.opacity(0.1) : Color.orange.opacity(0.1))
-                )
         }
         .padding()
-        .background(step.isDone ? Color.green.opacity(0.1) : Color(UIColor.secondarySystemGroupedBackground))
+        .background(Color(UIColor.secondarySystemGroupedBackground))
         .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(step.isDone ? Color.green.opacity(0.5) : Color.clear, lineWidth: 2)
-        )
         .sheet(isPresented: $showingStepEditView) {
-            StepEditView(step: Binding(
-                get: { self.step },
-                set: { newStep in
-                    if let index = goal.dailySteps.firstIndex(where: { $0.id == newStep.id }) {
-                        goal.dailySteps[index] = newStep
-                    } else if let index = goal.weeklySteps.firstIndex(where: { $0.id == newStep.id }) {
-                        goal.weeklySteps[index] = newStep
-                    } else if let index = goal.monthlySteps.firstIndex(where: { $0.id == newStep.id }) {
-                        goal.monthlySteps[index] = newStep
-                    }
-                    refreshID = UUID()
-                }
-            )) { updatedStep in
-                refreshID = UUID()
+            StepEditorView(step: step.content) { updatedContent, updatedEndDate in
+                updateStep(content: updatedContent, endDate: updatedEndDate)
             }
         }
+    }
+
+    private func updateStep(content: NSAttributedString, endDate: Date?) {
+        step.content = content
+        step.endDate = endDate
+        refreshID = UUID()
     }
 }
 
