@@ -238,6 +238,7 @@ struct StepListView: View {
     let stepType: GoalDetailView.StepType
     @Binding var refreshID: UUID
     @State private var showingAddStep = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var steps: [Step] {
         switch stepType {
@@ -254,13 +255,15 @@ struct StepListView: View {
         ZStack {
             Color(UIColor.systemGroupedBackground).edgesIgnoringSafeArea(.all)
             
-            List {
-                ForEach(steps, id: \.id) { step in
-                    StepCardView(step: step, goal: goal, refreshID: $refreshID)
+            VStack(spacing: 0) {
+                headerView
+                
+                if steps.isEmpty {
+                    emptyStateView
+                } else {
+                    stepsList
                 }
-                .onDelete(perform: deleteStep)
             }
-            .listStyle(InsetGroupedListStyle())
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
@@ -268,6 +271,7 @@ struct StepListView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { showingAddStep = true }) {
                     Image(systemName: "plus")
+                        .foregroundColor(.purple)
                 }
             }
         }
@@ -276,6 +280,63 @@ struct StepListView: View {
                 addStep(attributedText: attributedText, endDate: endDate)
             }
         }
+    }
+    
+    private var headerView: some View {
+        VStack(spacing: 16) {
+            Text(title)
+                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .foregroundColor(.primary)
+            
+            Text("Complete these steps to achieve your goal")
+                .font(.system(size: 16, weight: .medium, design: .rounded))
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+        }
+        .padding(.vertical, 24)
+        // Remove the background color here
+        // .background(Color(UIColor.secondarySystemGroupedBackground))
+    }
+    
+    private var emptyStateView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "checkmark.circle")
+                .font(.system(size: 60))
+                .foregroundColor(.purple)
+            
+            Text("No steps yet")
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+            
+            Text("Add steps to track your progress")
+                .font(.system(size: 16, design: .rounded))
+                .foregroundColor(.secondary)
+            
+            Button(action: { showingAddStep = true }) {
+                Text("Add Your First Step")
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(Color.purple)
+                    .cornerRadius(8)
+            }
+            .padding(.top, 10)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    private var stepsList: some View {
+        List {
+            ForEach(steps) { step in
+                StepCardView(step: step, goal: goal, refreshID: $refreshID)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    .listRowBackground(Color.clear)
+            }
+            .onDelete(perform: deleteStep)
+        }
+        .listStyle(PlainListStyle())
     }
 
     private func addStep(attributedText: NSAttributedString, endDate: Date?) {
