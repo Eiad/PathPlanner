@@ -95,7 +95,7 @@ struct GoalDetailView: View {
         .background(Color(UIColor.systemGroupedBackground))
         .sheet(isPresented: $showingStepEditor) {
             StepEditorView(step: newStep.content) { attributedText, endDate in
-                addStep(attributedText: attributedText, endDate: endDate)
+                addStep(attributedText: attributedText, endDate: endDate, stepType: selectedStepType)
             }
         }
         .sheet(isPresented: $showingGoalEditor) {
@@ -215,15 +215,18 @@ struct GoalDetailView: View {
         }
     }
 
-    private func addStep(attributedText: NSAttributedString, endDate: Date?) {
+    private func addStep(attributedText: NSAttributedString, endDate: Date?, stepType: StepType) {
         guard !attributedText.string.isEmpty else { return }
         
         let newStep = Step(content: attributedText, endDate: endDate)
         
-        if let index = goal.dailySteps.firstIndex(where: { $0.id == newStep.id }) {
-            goal.dailySteps[index] = newStep
-        } else {
+        switch stepType {
+        case .daily:
             goal.dailySteps.append(newStep)
+        case .weekly:
+            goal.weeklySteps.append(newStep)
+        case .monthly:
+            goal.monthlySteps.append(newStep)
         }
         
         self.newStep = Step(content: NSAttributedString(string: ""))
