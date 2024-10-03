@@ -57,7 +57,7 @@ struct AddGoalView: View {
     }
     
     private func saveGoal() {
-        let newGoal = Goal(title: title, startDate: startDate, endDate: endDate, progress: 0.0, category: category)
+        let newGoal = Goal(title: title, startDate: startDate, endDate: endDate, category: category)
         modelContext.insert(newGoal)
         dismiss()
     }

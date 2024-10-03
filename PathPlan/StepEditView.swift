@@ -62,13 +62,12 @@ struct StepEditView: View {
             .onChange(of: isDone) { oldValue, newValue in
                 if let goal = step.goal {
                     if goal.isCompleted {
-                        goal.progress = 1.0
+                        // The progress will be automatically updated by the computed property
                     } else {
-                        // Recalculate progress
-                        let allSteps = goal.dailySteps + goal.weeklySteps + goal.monthlySteps
-                        let completedSteps = allSteps.filter { $0.isDone }.count
-                        goal.progress = Double(completedSteps) / Double(allSteps.count)
+                        // The progress will be automatically updated by the computed property
                     }
+                    // Trigger an update to the goal
+                    goal.objectWillChange.send()
                 }
             }
         }

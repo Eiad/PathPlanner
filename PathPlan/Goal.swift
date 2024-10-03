@@ -7,18 +7,23 @@ final class Goal: ObservableObject {
     var title: String
     var startDate: Date
     var endDate: Date
-    var progress: Double
+    var progress: Double {
+        let allSteps = dailySteps + weeklySteps + monthlySteps
+        let totalSteps = allSteps.count
+        let completedSteps = allSteps.filter { $0.isDone }.count
+        
+        return totalSteps > 0 ? Double(completedSteps) / Double(totalSteps) : 0.0
+    }
     @Relationship(deleteRule: .cascade) var dailySteps: [Step]
     @Relationship(deleteRule: .cascade) var weeklySteps: [Step]
     @Relationship(deleteRule: .cascade) var monthlySteps: [Step]
     var category: String?
     
-    init(title: String, startDate: Date, endDate: Date, progress: Double = 0.0, category: String? = nil) {
+    init(title: String, startDate: Date, endDate: Date, category: String? = nil) {
         self.id = UUID()
         self.title = title
         self.startDate = startDate
         self.endDate = endDate
-        self.progress = progress
         self.category = category
         self.dailySteps = []
         self.weeklySteps = []
