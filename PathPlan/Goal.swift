@@ -24,6 +24,11 @@ final class Goal: ObservableObject {
         self.weeklySteps = []
         self.monthlySteps = []
     }
+    
+    var isCompleted: Bool {
+        let allSteps = dailySteps + weeklySteps + monthlySteps
+        return !allSteps.isEmpty && allSteps.allSatisfy { $0.isDone }
+    }
 }
 
 @Model
@@ -32,6 +37,7 @@ final class Step {
     @Attribute(.transformable(by: NSAttributedStringTransformer.self)) var content: NSAttributedString
     var endDate: Date?
     var isDone: Bool
+    var goal: Goal?
     
     init(content: NSAttributedString, endDate: Date? = nil, isDone: Bool = false) {
         self.id = UUID()

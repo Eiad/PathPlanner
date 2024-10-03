@@ -56,6 +56,7 @@ struct GoalDetailView: View {
     @State private var showingGoalEditor = false
     @Environment(\.colorScheme) private var colorScheme
     @State private var refreshID = UUID()
+    @Environment(\.modelContext) private var modelContext
 
     enum StepType: String, CaseIterable {
         case daily = "Daily"
@@ -101,6 +102,15 @@ struct GoalDetailView: View {
             GoalEditorView(goal: goal) {
                 refreshID = UUID()
             }
+        }
+        .onChange(of: goal.dailySteps) { oldValue, newValue in
+            updateGoalCompletion()
+        }
+        .onChange(of: goal.weeklySteps) { oldValue, newValue in
+            updateGoalCompletion()
+        }
+        .onChange(of: goal.monthlySteps) { oldValue, newValue in
+            updateGoalCompletion()
         }
     }
 
@@ -229,6 +239,17 @@ struct GoalDetailView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "d MMM yyyy"
         return formatter.string(from: date)
+    }
+
+    private func updateGoalCompletion() {
+        if goal.isCompleted {
+            goal.progress = 1.0
+        } else {
+            // Calculate progress based on completed steps
+            let allSteps = goal.dailySteps + goal.weeklySteps + goal.monthlySteps
+            let completedSteps = allSteps.filter { $0.isDone }.count
+            goal.progress = Double(completedSteps) / Double(allSteps.count)
+        }
     }
 }
 

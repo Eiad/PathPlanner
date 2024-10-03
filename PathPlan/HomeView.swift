@@ -13,8 +13,6 @@ struct HomeView: View {
     @State private var showingAddGoalView = false
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
-    @State private var goalsInProgress: Int = 0
-    @State private var completedGoals: Int = 0
     
     var body: some View {
         NavigationView {
@@ -47,7 +45,6 @@ struct HomeView: View {
         .sheet(isPresented: $showingAddGoalView) {
             AddGoalView()
         }
-        .onAppear(perform: updateGoalStatistics)
     }
     
     private var headerSection: some View {
@@ -70,22 +67,12 @@ struct HomeView: View {
         }
     }
     
-    private func statisticCard(title: String, value: String, icon: String, color: Color) -> some View {
-        VStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(.system(size: 24))
-                .foregroundColor(color)
-            Text(value)
-                .font(.system(size: 24, weight: .bold, design: .rounded))
-            Text(title)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(Color(UIColor.secondarySystemGroupedBackground))
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+    private var goalsInProgress: Int {
+        goals.filter { !$0.isCompleted }.count
+    }
+    
+    private var completedGoals: Int {
+        goals.filter { $0.isCompleted }.count
     }
     
     private var goalsList: some View {
@@ -136,9 +123,22 @@ struct HomeView: View {
         .cornerRadius(12)
     }
     
-    private func updateGoalStatistics() {
-        goalsInProgress = goals.filter { $0.progress > 0 && $0.progress < 1 }.count
-        completedGoals = goals.filter { $0.progress == 1 }.count
+    private func statisticCard(title: String, value: String, icon: String, color: Color) -> some View {
+        VStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 24))
+                .foregroundColor(color)
+            Text(value)
+                .font(.system(size: 24, weight: .bold, design: .rounded))
+            Text(title)
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding()
+        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
     }
 }
 

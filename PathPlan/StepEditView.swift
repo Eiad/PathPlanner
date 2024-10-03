@@ -17,12 +17,14 @@ struct StepEditView: View {
     @State private var isDone: Bool
     var onSave: (Step) -> Void
     @Environment(\.presentationMode) var presentationMode
+    @Environment(\.modelContext) private var modelContext
 
     init(step: Binding<Step>, onSave: @escaping (Step) -> Void) {
         self._step = step
         self._attributedText = State(initialValue: step.wrappedValue.content)
         self._isDone = State(initialValue: step.wrappedValue.isDone)
         self.onSave = onSave
+        self._endDate = State(initialValue: step.wrappedValue.endDate)
     }
 
     var body: some View {
@@ -54,6 +56,18 @@ struct StepEditView: View {
                         step.isDone = isDone
                         onSave(step)
                         presentationMode.wrappedValue.dismiss()
+                    }
+                }
+            }
+            .onChange(of: isDone) { oldValue, newValue in
+                if let goal = step.goal {
+                    if goal.isCompleted {
+                        goal.progress = 1.0
+                    } else {
+                        // Recalculate progress
+                        let allSteps = goal.dailySteps + goal.weeklySteps + goal.monthlySteps
+                        let completedSteps = allSteps.filter { $0.isDone }.count
+                        goal.progress = Double(completedSteps) / Double(allSteps.count)
                     }
                 }
             }
